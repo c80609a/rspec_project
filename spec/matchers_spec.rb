@@ -41,4 +41,18 @@ RSpec.describe 'Matchers' do
   end
 =end
 
+=begin
+   it 'asserts on predicates' do
+
+     class Shop
+       def assign?
+         true
+       end
+     end
+
+     expect(Shop.new).to be_assign
+
+   end
+=end
+
 end
