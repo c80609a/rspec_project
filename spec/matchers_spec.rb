@@ -25,10 +25,20 @@ RSpec.describe 'Matchers' do
   end
 =end
 
+=begin
   specify 'expects errors' do
     expect do
       raise ArgumentError
     end.to raise_error TypeError
   end
+=end
+
+=begin
+  specify 'except throws' do
+    expect do
+      throw :oops
+    end.to throw_symbol :oops
+  end
+=end
 
 end
