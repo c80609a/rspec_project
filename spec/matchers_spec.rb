@@ -55,4 +55,16 @@ RSpec.describe 'Matchers' do
    end
 =end
 
+  it 'assets on collections' do
+    list = [
+        :one,
+        :two,
+        :three
+    ]
+
+    expect(list).to include :one
+    expect(list).to start_with :one
+
+  end
+
 end
