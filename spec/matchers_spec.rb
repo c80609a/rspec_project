@@ -2,7 +2,6 @@
 
 RSpec.describe 'Matchers' do
 
-=begin
   it 'asserts on equality' do
     number = 3
     # number.should == 3
@@ -15,45 +14,38 @@ RSpec.describe 'Matchers' do
   end
 
   it 'asserts on thruthiness' do
-    bool = true
+    bool       = true
     falsy_bool = false
-    nil_value = nil
-    object = Class.new
-    
+    nil_value  = nil
+    object     = Class.new
+
     expect(object).to be_falsey
 
   end
-=end
 
-=begin
   specify 'expects errors' do
     expect do
       raise ArgumentError
     end.to raise_error TypeError
   end
-=end
 
-=begin
   specify 'except throws' do
     expect do
       throw :oops
     end.to throw_symbol :oops
   end
-=end
 
-=begin
-   it 'asserts on predicates' do
+  it 'asserts on predicates' do
 
-     class Shop
-       def assign?
-         true
-       end
-     end
+    class Shop
+      def assign?
+        true
+      end
+    end
 
-     expect(Shop.new).to be_assign
+    expect(Shop.new).to be_assign
 
-   end
-=end
+  end
 
   it 'assets on collections' do
     list = [
