@@ -53,6 +53,7 @@ describe 'NumberHelper' do
         expect(number_to_currency(n, {:precision => p})).to eq '$10.000'
       end
 
+      # комментарий после просмотра solution видоса: это edge case
       it 'omits the separator if :precision is 0' do
         n = 10
         p = 0
