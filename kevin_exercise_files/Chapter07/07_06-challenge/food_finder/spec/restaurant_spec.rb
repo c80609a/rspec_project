@@ -12,26 +12,47 @@ describe Restaurant do
     # то сначала мы читаем оригинальное значение (сохраняя его в переменную `read_*`),
     # а затем пишем новое значение (сохраняя его в переменную `write_*`).
     # После - лабаем массив из этих двух переменных и проверяем его
+    #
+    # Решение от Кевина выглядит лаконичнее:
+    #   - он использует (незамеченное мною) "implicitly defined subject"
+    #   - во-вторых, можно было просто один раз записать, один раз прочитать
 
     it 'allow reading and writing for :name' do
-      read_name = crescent.name
-      crescent.name = 'Caesar'
-      write_name = crescent.name
-      expect([read_name, write_name]).to eq %w(Crescent Caesar)
+
+      # моё решение:
+      # read_name = crescent.name
+      # crescent.name = 'Caesar'
+      # write_name = crescent.name
+      # expect([read_name, write_name]).to eq %w(Crescent Caesar)
+
+      subject.name = 'Caesar'
+      expect(subject.name).to eq 'Caesar'
+
     end
 
     it 'allow reading and writing for :cuisine' do
-      read_cuisine = crescent.cuisine
-      crescent.cuisine = 'mexican'
-      write_cuisine = crescent.cuisine
-      expect([read_cuisine, write_cuisine]).to eq %w(paleo mexican)
+
+      # моё решение:
+      # read_cuisine = crescent.cuisine
+      # crescent.cuisine = 'mexican'
+      # write_cuisine = crescent.cuisine
+      # expect([read_cuisine, write_cuisine]).to eq %w(paleo mexican)
+
+      subject.cuisine = 'mexican'
+      expect(subject.cuisine).to eq 'mexican'
+
     end
 
     it 'allow reading and writing for :price' do
-      read_price = crescent.price
-      crescent.price = '123'
-      write_price = crescent.price
-      expect([read_price, write_price]).to eq %w(321 123)
+
+      # read_price = crescent.price
+      # crescent.price = '123'
+      # write_price = crescent.price
+      # expect([read_price, write_price]).to eq %w(321 123)
+
+      subject.price = 123
+      expect(subject.price).to eq 123
+
     end
     
   end
@@ -99,34 +120,53 @@ describe Restaurant do
       # subject would return the same thing
       let(:no_options) { Restaurant.new }
 
+      # исправляю своё "решение" - я когда писал его,
+      # думал явно о чём-то другом
+
       it 'sets a default of "" for :name' do
-        no_options.name = ''
+        expect(no_options.name).to eq ''
       end
 
       it 'sets a default of "unknown" for :cuisine' do
-        no_options.cuisine = 'unknown'
+        expect(no_options.cuisine).to eq 'unknown'
       end
 
       it 'does not set a default for :price' do
-        no_options.price = nil
+        # моё решение:
+        # expect(no_options.price).to eq nil
+
+        # решение автора - он использует `be_nil`
+        expect(no_options.price).to be_nil
       end
     end
     
     context 'with custom options' do
 
-      subject(:with_options) { Restaurant.new({:name => '1', :cuisine => '2', :price => '3'}) }
+      # здесь я завёл `subject`, хотя можно было
+      # использовать более глобальный `let(:crescent)`
+
+      # моё решение
+      # subject(:with_options) { Restaurant.new({:name => '1', :cuisine => '2', :price => '3'}) }
 
       it 'allows setting the :name' do
-        expect(with_options.name).to eq '1'
+        # моё решение
+        # expect(with_options.name).to eq '1'
+
+        expect(crescent.name).to eq 'Crescent'
       end
 
       it 'allows setting the :cuisine' do
-        expect(with_options.cuisine).to eq '2'
+        # моё решение
+        # expect(with_options.cuisine).to eq '2'
+
+        expect(crescent.cuisine).to eq 'paleo'
       end
 
       it 'allows setting the :price' do
-        expect(with_options.price).to eq '3'
+        # моё решение
+        # expect(with_options.price).to eq '3'
 
+        expect(crescent.price).to eq '321'
       end
 
     end
@@ -136,12 +176,31 @@ describe Restaurant do
   describe '#save' do
     
     it 'returns false if @@file is nil' do
-      expect(crescent.save).to eq false
+      # моё решение:
+      # expect(crescent.save).to eq false
+
+      # решение автора состоит из двух ожиданий:
+      expect(Restaurant.file).to be_nil
+      expect(crescent.save).to be false
+
     end
     
     it 'returns false if not valid' do
-      crescent.price = -1
-      expect(crescent.save).to eq false
+      # моё решение: я забыл загрузить файл,
+      # перед тем, как делать crescent невалидным
+      # этот тест пройдёт, даже если закомментировать
+      # первую строчку
+      # crescent.price = -1
+      # expect(crescent.save).to eq false
+
+      # решение автора: сначала надо загрузить
+      # файл, затем попытаться сохранить в него
+      # конкретный ресторан - subject
+      Restaurant.load_file(test_file)
+      expect(Restaurant.file).to_not be_nil
+      expect(subject.save).to be false
+
+
     end
     
     it 'calls append on @@file if valid' do
@@ -150,9 +209,25 @@ describe Restaurant do
       # чтобы не записывать изменения в файл,
       # не портить его, так скажем
 
+      # моё решение:
+      #   оно ошибочно, т.к. если я закомментирую последнюю
+      #   строку, то тест всё-равно пройдёт
+      # Restaurant.load_file(test_file)
+      # allow(Restaurant.file).to receive(:append).and_return(true)
+      # expect(crescent.save).to eq true
+
+      # решение автора:
+      # 0) в самом начале после загрузки файла автор проверил
+      #   что файл загрузился.
+      # 1) в первую очередь он проверил,
+      #   что метод `append` вызовется с аргументом,
+      # 2) и он не использует `allow`, а юзает более строий `expect`.
+      # 3) И в файл не происходит записи.
       Restaurant.load_file(test_file)
-      allow(Restaurant.file).to receive(:append).and_return(true)
-      expect(crescent.save).to eq true
+      expect(Restaurant.file).to_not be_nil
+      expect(Restaurant.file).to receive(:append).with(crescent)
+      crescent.save
+
     end
     
   end
@@ -163,7 +238,13 @@ describe Restaurant do
     # так же можно?
 
     it 'returns false if name is nil' do
-      allow(crescent).to receive(:name).and_return(nil)
+
+      # моё решение:
+      # allow(crescent).to receive(:name).and_return(nil)
+
+      # решение автора ( и так далее во всех оставшихся тестах этой группы):
+      crescent.name = nil
+
       expect(crescent.valid?).to eq false
     end
 
