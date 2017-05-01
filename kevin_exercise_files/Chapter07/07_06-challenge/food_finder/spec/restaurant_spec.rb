@@ -1,4 +1,4 @@
-require 'restaurant'
+require_relative '../lib/restaurant'
 
 describe Restaurant do
 
@@ -7,11 +7,11 @@ describe Restaurant do
   
   describe 'attributes' do
   
-    it "allow reading and writing for :name"
+    it 'allow reading and writing for :name'
 
-    it "allow reading and writing for :cuisine"
+    it 'allow reading and writing for :cuisine'
 
-    it "allow reading and writing for :price"
+    it 'allow reading and writing for :price'
     
   end
   
@@ -26,6 +26,7 @@ describe Restaurant do
       no_output { Restaurant.load_file(test_file) }
       expect(Restaurant.file).not_to be_nil
       expect(Restaurant.file.class).to be(RestaurantFile)
+      # noinspection RubyResolve
       expect(Restaurant.file).to be_usable
     end
 
@@ -40,7 +41,8 @@ describe Restaurant do
         Restaurant.load_file(test_file)
       end.not_to output.to_stdout
     end
-    
+
+
   end
   
   describe '.all' do
