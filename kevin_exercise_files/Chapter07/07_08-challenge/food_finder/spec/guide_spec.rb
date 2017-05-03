@@ -17,9 +17,33 @@ describe Guide do
   describe '#intialize' do
     
     it 'calls Restaurant#load_file with its path argument' do
-      skip('Needs expectation')
-      Guide.new(test_file)
+
+      # изначально задание выглядит так:
+      # skip('Needs expectation')
+      # Guide.new(test_file)
       # expect ...
+
+      ## 1) если мы напишем так (хотим сохранить порядок строк в задании):
+      #   Guide.new(test_file)
+      #   expect(Restaurant).to receive(:load_file).with(test_file)
+      # то это без смысла, т.к. в данном случае `expect().to receive()`
+      # подразумевает stubbing и делать это нужно ДО вызова `Guide.new`
+
+      ## 2) если же мы напишем так:
+      #   expect(Restaurant).to receive(:load_file).with(test_file)
+      #   Guide.new(test_file)
+      # т.е. поменяем местами 2 строки, то это будет похоже на
+      # правильный тест, но возникает вопрос -
+      # автор подразумевал ли, что так нужно сделать?
+      # Ведь он даёт задание,
+      # в котором строка `Guide.new` находится выше строки `# expect ..`.
+
+      ## 3) если же мы напишем так, то мы сохраним порядок строк,
+      # который был указан в исходном задании,
+      # но не слишком ли много строк для такого простого теста?
+      allow(Restaurant).to receive(:load_file)
+      Guide.new(test_file)
+      expect(Restaurant).to have_received(:load_file).with(test_file)
     end
     
   end
@@ -27,9 +51,41 @@ describe Guide do
   describe '#launch!' do
     
     it 'outputs a introductory message' do
-      skip('Needs expectation')
+
+      # изначально задание выглядит так:
+      #   skip('Needs expectation')
+      #   setup_fake_input('quit')
+      #   expect ...
+
+      # == вариант 1
+      # я просто запустил приложение и выписал
+      # все строки, которые оно выводит при старте
+      # в переменную exp, а затем наваял тест,
+      # который сравнивает это сообщение
+      exp = "\n\n<<< Welcome to the Food Finder >>>\n\n"
+      exp += "This is an interactive guide to help you find the food you crave.\n\n"
+      exp += "Actions: list, find, add, quit\n"   # output_valid_actions
+      exp += "\n<<< Goodbye and Bon Appetit! >>>\n\n\n"
+
       setup_fake_input('quit')
-      # expect ...
+      g = Guide.new('restaurants.txt')
+      m = capture_output { g.launch! }
+      expect(m).to eq exp
+
+      # == вариант 2
+      # я не сравниваю полностью весь ответ, который выдаёт приложение при запуске
+      # я беру лишь ключевые предложения и ищу их в introductory message.
+      # одно из моих ожиданий - это regex, который подразумевает наличие
+      # списка допустимых действий в introductory message.
+      e1 = 'Welcome to the Food Finder'
+      e2 = 'This is an interactive guide to help you find the food you crave.'
+      r3 = /Actions:[ \w,]+/
+
+      setup_fake_input('quit')
+      g = Guide.new('restaurants.txt')
+      m = capture_output { g.launch! }
+      expect(m.include?(e1) && m.include?(e2) && r3.match(m).length > 0).to be true
+
     end
     
   end
@@ -39,9 +95,18 @@ describe Guide do
     context 'with invalid action' do
       
       it 'outputs list of valid actions' do
-        skip('Needs expectation')
-        setup_fake_input('invalid action', 'quit')
+
+        # = изначально задание выглядит так
+        #skip('Needs expectation')
+        #setup_fake_input('invalid action', 'quit')
         # expect ...
+
+        # = вариант 1
+        # используем `subject`
+        setup_fake_input('invalid action', 'quit')
+        m = capture_output { subject.launch! }
+        expect(m.include?('Action not recognized')).to be true
+
       end
       
     end
@@ -49,9 +114,20 @@ describe Guide do
     context 'with quit action' do
       
       it 'outputs concluding message and exits' do
-        skip('Needs expectation')
-        setup_fake_input('quit')
+
+        # = задание
+        # skip('Needs expectation')
+        # setup_fake_input('quit')
         # expect ...
+
+        # = моё решение
+        # используем subject
+        # для краткости - используем регулярку
+        # используем `not_to` и `be_nil`
+        setup_fake_input('quit')
+        m = capture_output { subject.launch! }
+        expect(m[/Appetit/]).not_to be_nil
+
       end
       
     end
@@ -72,21 +148,49 @@ describe Guide do
       end
       
       it 'outputs a message if no listings are found' do
-        skip("Needs expectation")
+
+        # = задание
+        # skip("Needs expectation")
+        # setup_fake_input('list', 'quit')
+        # output = capture_output { blank_guide.launch! }
+        # lines = output.split("\n")
+        # expect(lines[10]).to match(/^\sName\s{27}Cuisine\s{15}Price$/)
+        # expect(lines[11]).to eq("-" * 60)
+        # expect(lines[12]).to ...
+        # expect(lines[13]).to eq("-" * 60)
+
+        # = моё решение
+        # я просто написал expect(lines[12]).to match(/No listings found/)
+        # регулярку использовал в стиле примера
         setup_fake_input('list', 'quit')
         output = capture_output { blank_guide.launch! }
+        # puts output
         lines = output.split("\n")
         expect(lines[10]).to match(/^\sName\s{27}Cuisine\s{15}Price$/)
         expect(lines[11]).to eq("-" * 60)
-        # expect(lines[12]).to ...
+        expect(lines[12]).to match(/No listings found/)
         expect(lines[13]).to eq("-" * 60)
-        
+
         # clean up
         remove_created_file(new_file_path)
       end
       
       it 'sorts alphabetically by default' do
-        skip('Needs expectation')
+
+        # = задание
+        # skip('Needs expectation')
+        # setup_fake_input('list', 'quit')
+        # output = capture_output { subject.launch! }
+        # lines = output.split("\n")
+        # Use Regex to extract the names
+        # names = lines[12..17].map {|l| l.match(/^\s(.+)\s+.+\s+\$\d+\.\d{2}$/)[1]}
+        # Build array with the first characters
+        # first_chars = names.map {|l| l[0] }
+        # expect(first_chars).to ...
+
+        # = моё решение
+        # я просто сравниваю first_chars со строкой, которую я скомпоновал,
+        # просматривая :test_file файл - так же надо делать?
         setup_fake_input('list', 'quit')
         output = capture_output { subject.launch! }
         lines = output.split("\n")
@@ -94,11 +198,23 @@ describe Guide do
         names = lines[12..17].map {|l| l.match(/^\s(.+)\s+.+\s+\$\d+\.\d{2}$/)[1]}
         # Build array with the first characters
         first_chars = names.map {|l| l[0] }
-        # expect(first_chars).to ...
+        expect(first_chars.join('')).to eq 'CHMPQT'
       end
       
       it 'sorts alphabetically with an invalid sort by' do
-        skip('Needs expectation')
+        # = задание
+        #skip('Needs expectation')
+        #setup_fake_input('list invalid', 'quit')
+        # output = capture_output { subject.launch! }
+        # lines = output.split("\n")
+        # Use Regex to extract the names
+        # names = lines[12..17].map {|l| l.match(/^\s(.+)\s+.+\s+\$\d+\.\d{2}$/)[1]}
+        # Build array with the first characters
+        # first_chars = names.map {|l| l[0] }
+        # expect(first_chars).to ...
+
+        # = моё решение
+        # по-сути, ничем не отличается от предыдущего кейса
         setup_fake_input('list invalid', 'quit')
         output = capture_output { subject.launch! }
         lines = output.split("\n")
@@ -106,11 +222,28 @@ describe Guide do
         names = lines[12..17].map {|l| l.match(/^\s(.+)\s+.+\s+\$\d+\.\d{2}$/)[1]}
         # Build array with the first characters
         first_chars = names.map {|l| l[0] }
-        # expect(first_chars).to ...
+        expect(first_chars.join('')).to eq 'CHMPQT'
+
       end
 
       it 'sorts by price when asked' do
-        skip('Needs expectation')
+
+        # = задание
+        # skip('Needs expectation')
+        # setup_fake_input('list price', 'quit')
+        # output = capture_output { subject.launch! }
+        # lines = output.split("\n")
+        # prices = lines[12..17].map do |l|
+          # Use Regex to extract the prices
+          # string = l.match(/^\s.+\s+.+\s+\$(\d+\.\d{2})$/)[1]
+          # convert '150.00' to 15000 (avoids using floats)
+          # d, c = string.split('.')
+          # price = (d.to_i * 100) + c.to_i
+        # end
+        # expect(prices).to ...
+
+        # = моё решение
+        # только я не понял смысла таких простых заданий
         setup_fake_input('list price', 'quit')
         output = capture_output { subject.launch! }
         lines = output.split("\n")
@@ -121,19 +254,50 @@ describe Guide do
           d, c = string.split('.')
           price = (d.to_i * 100) + c.to_i
         end
-        # expect(prices).to ...
+        # puts prices
+        expect(prices).to eq [500,1000,1000,2500,3000,3500]
       end
 
       it 'sorts by cuisine when asked' do
-        skip('Needs expectation')
+
+        # = задание
+        # skip('Needs expectation')
+        # setup_fake_input('list cuisine', 'quit')
+        # output = capture_output { subject.launch! }
+        # lines = output.split("\n")
+        # Use Regex to extract the cuisines
+        # cuisines = lines[12..17].map do |l|
+        #   l.match(/^\s.+\s+(.+)\s+\$\d+\.\d{2}$/)[1]
+        # end
+        # expect(cuisines).to ...
+
+        # = моё решение
+        # а здесь попался regex от автора
+        # который не сработал, надо было
+        # переделать. (другой вопрос - почему не сработал авторский regex?)
+        # Итак, необходимо из строк вида:
+        #
+        #   Quick Cup                      Coffee                $5.00
+        #   Pita Pocket                    Fast Food            $10.00
+        #   Taste Of Little Italy          Pizza                $10.00
+        #   Mallard House                  New American         $35.00
+        #
+        # извлечь столбец с кухнями.
+        # изучаем `Guide.output_restaurant_table`:
+        #   * первые 31 символа строки - это название ресторана
+        #   * после идут 21 символ с названием кухни
+        # + пригодился 'String#strip'
         setup_fake_input('list cuisine', 'quit')
         output = capture_output { subject.launch! }
         lines = output.split("\n")
         # Use Regex to extract the cuisines
         cuisines = lines[12..17].map do |l|
-          l.match(/^\s.+\s+(.+)\s+\$\d+\.\d{2}$/)[1]
+          # puts l.match(/(?<=^\s[\w\s]{30})(\s[\w\s]{20})/)[1]
+          # l.match(/^\s.+\s+(.+)\s+\$\d+\.\d{2}$/)[1]
+          l.match(/(?<=^\s[\w\s]{30})(\s[\w\s]{20})/)[1].strip
         end
-        # expect(cuisines).to ...
+        expect(cuisines).to eq %w'Coffee Fast\ Food Indian Mexican New\ American Pizza'
+        # puts cuisines
       end
       
     end
@@ -141,45 +305,95 @@ describe Guide do
     context 'with find action' do
       
       it 'outputs instructions if no arguments given' do
-        skip('Needs expectation')
+
+        # = задание
+        # skip('Needs expectation')
+        # setup_fake_input('find', 'quit')
+        # output = capture_output { subject.launch! }
+        # expect(output).to ...
+
+        # = моё решение
         setup_fake_input('find', 'quit')
         output = capture_output { subject.launch! }
+        # puts output
+        expect(output).to match(/Examples/)
         # expect(output).to ...
+
       end
       
       it 'finds restaurants with matching name keyword' do
-        skip('Needs expectation')
+
+        # = задание
+        # skip('Needs expectation')
+        # setup_fake_input('find cafe', 'quit')
+        # output = capture_output { subject.launch! }
+        #
+        # lines = output.split("\n")
+        # expect(lines[11]).to eq("-" * 60)
+        # expect(lines[12]).to ...
+        # expect(lines[13]).to eq("-" * 60)
+
+        # = моё решение
         setup_fake_input('find cafe', 'quit')
         output = capture_output { subject.launch! }
-        
+
         lines = output.split("\n")
-        expect(lines[11]).to eq("-" * 60)
-        # expect(lines[12]).to ...
-        expect(lines[13]).to eq("-" * 60)
+        expect(lines[11]).to eq('-' * 60)
+        expect(lines[12]).to match(/Indian/)
+        expect(lines[13]).to eq('-' * 60)
+        # puts lines[12]
+
       end
 
       it 'finds restaurants with matching cuisine keyword' do
-        skip('Needs expectation')
+
+        # = задание
+        # skip('Needs expectation')
+        # setup_fake_input('find mexican', 'quit')
+        # output = capture_output { subject.launch! }
+        #
+        # lines = output.split("\n")
+        # expect(lines[11]).to eq("-" * 60)
+        # expect(lines[12]).to ...
+        # expect(lines[13]).to eq("-" * 60)
+
+        # = моё решение
+        # почему так просто?
         setup_fake_input('find mexican', 'quit')
         output = capture_output { subject.launch! }
-        
+
         lines = output.split("\n")
-        expect(lines[11]).to eq("-" * 60)
-        # expect(lines[12]).to ...
-        expect(lines[13]).to eq("-" * 60)
+        expect(lines[11]).to eq('-' * 60)
+        expect(lines[12]).to match(/Mexican/)
+        expect(lines[13]).to eq('-' * 60)
+
       end
       
       it 'finds restaurants with prices less than keyword' do
-        skip('Needs expectation')
-        setup_fake_input('find 10', 'quit')
-        output = capture_output { subject.launch! }
-        
-        lines = output.split("\n")
-        expect(lines[11]).to eq("-" * 60)
+
+        # = Задание
+        # skip('Needs expectation')
+        # setup_fake_input('find 10', 'quit')
+        # output = capture_output { subject.launch! }
+        #
+        # lines = output.split("\n")
+        # expect(lines[11]).to eq("-" * 60)
         # expect(lines[12]).to ...
         # expect(lines[13]).to ...
         # expect(lines[14]).to ...
-        expect(lines[15]).to eq("-" * 60)
+        # expect(lines[15]).to eq("-" * 60)
+
+        # = Решение
+        setup_fake_input('find 10', 'quit')
+        output = capture_output { subject.launch! }
+
+        lines = output.split("\n")
+        expect(lines[11]).to eq('-' * 60)
+        expect(lines[12]).to match(/Fast Food/)
+        expect(lines[13]).to match(/Coffee/)
+        expect(lines[14]).to match(/Pizza/)
+        expect(lines[15]).to eq('-' * 60)
+
       end
 
     end
@@ -203,16 +417,39 @@ describe Guide do
         # "Cuisine type: "      :cuisine
         # "Average price: "     :price
 
+        # = задание
+        # output = capture_output { subject.launch! }
+        # expect(output).to match(...)
+        # expect(output).to match(...)
+        # expect(output).to match(...)
+
+        # = решение
+        # не решение, а тренировка десятипальцевого метода
+        # английских слов
         output = capture_output { subject.launch! }
-        # expect(output).to match(...)
-        # expect(output).to match(...)
-        # expect(output).to match(...)
+        expect(output).to match(/Restaurant name/)
+        expect(output).to match(/Cuisine type/)
+        expect(output).to match(/Average price/)
+        # puts output
       end
 
       it 'sends question answers to Restaurant.new' do
-        skip("Needs expectation")
-        subject.launch!
+
+        # = задание
+        # skip("Needs expectation")
+        # subject.launch!
         # expect(Restaurant).to ...
+
+        # = решение
+        # это из темы 'message arguments expectations'
+        expected_args = {
+            :name => 'Chelsea Diner',
+            :cuisine => 'American',
+            :price => '20'
+        }
+        expect(Restaurant).to receive(:new).with(expected_args)
+        subject.launch!
+
       end
 
     end
