@@ -44,6 +44,13 @@ describe Guide do
       allow(Restaurant).to receive(:load_file)
       Guide.new(test_file)
       expect(Restaurant).to have_received(:load_file).with(test_file)
+
+      # = решение
+      # решение автора - это моё решение №2
+      # в видео он оговаривается, что вызов `expect()` должен
+      # идти перед вызовом `Guide.new()`. Также здесь не используется
+      # subject.
+
     end
     
   end
@@ -86,6 +93,16 @@ describe Guide do
       m = capture_output { g.launch! }
       expect(m.include?(e1) && m.include?(e2) && r3.match(m).length > 0).to be true
 
+      # = решение
+      # Автор не использует ВЕСЬ текст, как это сделал я
+      # Он берёт только одно слово - Welcome и ищет его в captured output
+      # использует регулярку
+      # использует `output().to_stdout`
+      # использует `subject`
+      # использует блок
+      setup_fake_input('quit')
+      expect { subject.launch! }.to output(/Welcome/).to_stdout
+
     end
     
   end
@@ -107,6 +124,15 @@ describe Guide do
         m = capture_output { subject.launch! }
         expect(m.include?('Action not recognized')).to be true
 
+        # = решение
+        # автор использует блок `expect do .. end.to`
+        # использует `output().to_stdout
+        # использует subject
+        setup_fake_input('invalid action', 'quit')
+        expect do
+          subject.launch!
+        end.to output(/Action not recognized./).to_stdout
+
       end
       
     end
@@ -127,6 +153,13 @@ describe Guide do
         setup_fake_input('quit')
         m = capture_output { subject.launch! }
         expect(m[/Appetit/]).not_to be_nil
+
+        # = решение автора
+        # использует subject
+        # использует блок в `expected {..}.to`
+        # использует `output(..).to_stdout`
+        setup_fake_input('quit')
+        expect { subject.launch! }.to output(/Goodbye/).to_stdout
 
       end
       
@@ -171,6 +204,9 @@ describe Guide do
         expect(lines[12]).to match(/No listings found/)
         expect(lines[13]).to eq("-" * 60)
 
+        # = решение автора
+        # полностью совпадает с моим
+
         # clean up
         remove_created_file(new_file_path)
       end
@@ -199,6 +235,21 @@ describe Guide do
         # Build array with the first characters
         first_chars = names.map {|l| l[0] }
         expect(first_chars.join('')).to eq 'CHMPQT'
+
+        # = решение автора
+        # он не сравнивает со строкой,
+        # он сравнивает с отсортированным массивом
+        # skip('Needs expectation')
+        # '<...> it should be same thing as unsorted version.'
+        setup_fake_input('list', 'quit')
+        output = capture_output { subject.launch! }
+        lines = output.split("\n")
+        # Use Regex to extract the names
+        names = lines[12..17].map {|l| l.match(/^\s(.+)\s+.+\s+\$\d+\.\d{2}$/)[1]}
+        # Build array with the first characters
+        first_chars = names.map {|l| l[0] }
+        expect(first_chars).to eq first_chars.sort
+
       end
       
       it 'sorts alphabetically with an invalid sort by' do
@@ -223,6 +274,19 @@ describe Guide do
         # Build array with the first characters
         first_chars = names.map {|l| l[0] }
         expect(first_chars.join('')).to eq 'CHMPQT'
+
+        # = решение автора
+        # точно такое же, как в предыдущем примере
+        # '<...> the first characters be equal of first characters if they we sorted.'
+        #skip('Needs expectation')
+        setup_fake_input('list invalid', 'quit')
+        output = capture_output { subject.launch! }
+        lines = output.split("\n")
+        # Use Regex to extract the names
+        names = lines[12..17].map {|l| l.match(/^\s(.+)\s+.+\s+\$\d+\.\d{2}$/)[1]}
+        # Build array with the first characters
+        first_chars = names.map {|l| l[0] }
+        expect(first_chars).to eq first_chars.sort
 
       end
 
@@ -256,6 +320,23 @@ describe Guide do
         end
         # puts prices
         expect(prices).to eq [500,1000,1000,2500,3000,3500]
+
+        # = решение автора
+        # такое же, как и в предыдущих примерах
+        # сравнивает получившийся массив с отсортированным массивом
+        # skip('Needs expectation')
+        setup_fake_input('list price', 'quit')
+        output = capture_output { subject.launch! }
+        lines = output.split("\n")
+        prices = lines[12..17].map do |l|
+          # Use Regex to extract the prices
+          string = l.match(/^\s.+\s+.+\s+\$(\d+\.\d{2})$/)[1]
+          # convert '150.00' to 15000 (avoids using floats)
+          d, c = string.split('.')
+          price = (d.to_i * 100) + c.to_i
+        end
+        expect(prices).to eq prices.sort
+
       end
 
       it 'sorts by cuisine when asked' do
@@ -298,6 +379,21 @@ describe Guide do
         end
         expect(cuisines).to eq %w'Coffee Fast\ Food Indian Mexican New\ American Pizza'
         # puts cuisines
+
+        # = решение автора
+        # такое же, как и в предыдущих примерах
+        # сравнивает массив со своей отсортированной версией
+        setup_fake_input('list cuisine', 'quit')
+        output = capture_output { subject.launch! }
+        lines = output.split("\n")
+        # Use Regex to extract the cuisines
+        cuisines = lines[12..17].map do |l|
+          # puts l.match(/(?<=^\s[\w\s]{30})(\s[\w\s]{20})/)[1]
+          # l.match(/^\s.+\s+(.+)\s+\$\d+\.\d{2}$/)[1]
+          l.match(/(?<=^\s[\w\s]{30})(\s[\w\s]{20})/)[1].strip
+        end
+        expect(cuisines).to eq cuisines.sort
+
       end
       
     end
@@ -318,6 +414,12 @@ describe Guide do
         # puts output
         expect(output).to match(/Examples/)
         # expect(output).to ...
+
+        # = решение автора
+        # использует matcher `include`, и подаёт туда key phrase
+        setup_fake_input('find', 'quit')
+        output = capture_output { subject.launch! }
+        expect(output).to include('Find using a key phrase to search the restaurant list')
 
       end
       
@@ -343,6 +445,17 @@ describe Guide do
         expect(lines[13]).to eq('-' * 60)
         # puts lines[12]
 
+        # = решение автора
+        # аналогично решению в предыдущем примере
+        # использует matcher `include`
+        setup_fake_input('find cafe', 'quit')
+        output = capture_output { subject.launch! }
+
+        lines = output.split("\n")
+        expect(lines[11]).to eq('-' * 60)
+        expect(lines[12]).to include('Masala')
+        expect(lines[13]).to eq('-' * 60)
+
       end
 
       it 'finds restaurants with matching cuisine keyword' do
@@ -365,6 +478,16 @@ describe Guide do
         lines = output.split("\n")
         expect(lines[11]).to eq('-' * 60)
         expect(lines[12]).to match(/Mexican/)
+        expect(lines[13]).to eq('-' * 60)
+
+        # = решение автора
+        # аналогично предыдущему кейсу
+        setup_fake_input('find mexican', 'quit')
+        output = capture_output { subject.launch! }
+
+        lines = output.split("\n")
+        expect(lines[11]).to eq('-' * 60)
+        expect(lines[12]).to include 'Mexican'
         expect(lines[13]).to eq('-' * 60)
 
       end
@@ -392,6 +515,19 @@ describe Guide do
         expect(lines[12]).to match(/Fast Food/)
         expect(lines[13]).to match(/Coffee/)
         expect(lines[14]).to match(/Pizza/)
+        expect(lines[15]).to eq('-' * 60)
+
+        # = Решение автора
+        # аналогично предыдущим кейсам
+        # использует matcher `include`
+        setup_fake_input('find 10', 'quit')
+        output = capture_output { subject.launch! }
+
+        lines = output.split("\n")
+        expect(lines[11]).to eq('-' * 60)
+        expect(lines[12]).to include 'Fast Food'
+        expect(lines[13]).to include 'Coffee'
+        expect(lines[14]).to include 'Pizza'
         expect(lines[15]).to eq('-' * 60)
 
       end
@@ -431,6 +567,9 @@ describe Guide do
         expect(output).to match(/Cuisine type/)
         expect(output).to match(/Average price/)
         # puts output
+
+        # = решение автора
+        # совпадает с моим
       end
 
       it 'sends question answers to Restaurant.new' do
@@ -449,6 +588,9 @@ describe Guide do
         }
         expect(Restaurant).to receive(:new).with(expected_args)
         subject.launch!
+
+        # = решение автора
+        # аналогично моему
 
       end
 
